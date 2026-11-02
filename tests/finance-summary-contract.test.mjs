@@ -7,7 +7,7 @@ function validFinanceSummary(error, raw) {
   const keys = ['cash_movements_count','cash_net_idr','advance_movements_count','advance_outstanding_idr'];
   return !error && Boolean(aggregate) &&
     keys.every(k => aggregate[k] !== null && aggregate[k] !== undefined &&
-      Number.isFinite(Number(aggregate[k])) && Number.isSafeInteger(Number(aggregate[k]))) &&
+      typeof aggregate[k] !== 'boolean' && String(aggregate[k]).trim().length > 0 && Number.isFinite(Number(aggregate[k])) && Number.isSafeInteger(Number(aggregate[k]))) &&
     Number(aggregate.cash_movements_count) >= 0 &&
     Number(aggregate.advance_movements_count) >= 0 &&
     Number(aggregate.advance_outstanding_idr) >= 0;
@@ -22,3 +22,5 @@ test('negative employee advance balance rejected',()=>assert.equal(validFinanceS
 test('unsafe numeric precision rejected',()=>assert.equal(validFinanceSummary(null,[{...good,cash_net_idr:'9007199254740993'}]),false));
 test('null aggregates rejected',()=>assert.equal(validFinanceSummary(null,[{...good,cash_net_idr:null}]),false));
 test('negative cash net permitted because it is a signed movement total',()=>assert.equal(validFinanceSummary(null,[good]),true));
+test('blank numeric string rejected',()=>assert.equal(validFinanceSummary(null,[{...good,cash_net_idr:' '}]),false));
+test('boolean numeric field rejected',()=>assert.equal(validFinanceSummary(null,[{...good,cash_net_idr:false}]),false));
