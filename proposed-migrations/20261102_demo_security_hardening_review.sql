@@ -17,13 +17,13 @@ begin
  select coalesce(sum(amount_idr),0) into bal from public.demo_deposit_movements where account_id=account;
  if action='topup' then
   if number is null or number !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then raise exception 'REQUEST_ID_REQUIRED'; end if;
+  if amount is null or amount<=0 or amount<>trunc(amount) or amount>1000000000000 then raise exception 'INVALID_AMOUNT';end if;
   request_uuid:=number::uuid;
   select m.account_id,m.amount_idr into previous_account,previous_amount from public.demo_deposit_movements m where m.topup_request_id=request_uuid;
   if found then
    if previous_account<>account or previous_amount<>amount then raise exception 'REQUEST_ID_CONFLICT'; end if;
    return jsonb_build_object('status','OK','duplicate',true,'balance',bal);
   end if;
-  if amount is null or amount<=0 or amount<>trunc(amount) or amount>1000000000000 then raise exception 'INVALID_AMOUNT';end if;
   insert into public.demo_deposit_movements(account_id,kind,amount_idr,created_by,topup_request_id) values(account,'topup',amount,uid,request_uuid);
   return jsonb_build_object('status','OK','balance',bal+amount);
  end if;
