@@ -28,7 +28,8 @@ begin
   return jsonb_build_object('status','OK','balance',bal+amount);
  end if;
  if number is null or length(trim(number))<1 or length(number)>80 then raise exception 'INVALID_BON';end if;
- if not exists(select 1 from public.periods where id=period and barn_id=barn and status='open') then raise exception 'PERIOD_MISMATCH';end if;
+ perform 1 from public.periods where id=period and barn_id=barn and status='open' for share;
+ if not found then raise exception 'PERIOD_MISMATCH';end if;
  if exists(select 1 from public.demo_bons where account_id=account and bon_number=trim(number)) then raise exception 'DUPLICATE_BON';end if;
  if items is null or jsonb_typeof(items)<>'array' or jsonb_array_length(items)<1 or jsonb_array_length(items)>40 then raise exception 'INVALID_ITEMS';end if;
  for row_item in select value from jsonb_array_elements(items) loop
@@ -62,7 +63,8 @@ begin
  if uid is null or not exists(select 1 from public.staff_roles where user_id=uid and role='admin' and enabled) then raise exception 'ADMIN_REQUIRED';end if;
  perform 1 from public.demo_deposit_accounts where id=account for update;
  if not found then raise exception 'ACCOUNT_NOT_FOUND';end if;
- if not exists(select 1 from public.periods where id=period and barn_id=barn and status='open') then raise exception 'PERIOD_MISMATCH';end if;
+ perform 1 from public.periods where id=period and barn_id=barn and status='open' for share;
+ if not found then raise exception 'PERIOD_MISMATCH';end if;
  if reference_no is null or length(trim(reference_no))<1 or length(reference_no)>80 then raise exception 'INVALID_REFERENCE';end if;
  if sold_on is null or weight_kg is null or price_per_kg_idr is null or weight_kg<=0 or weight_kg>1000000 or price_per_kg_idr<=0 or price_per_kg_idr>1000000000 or price_per_kg_idr<>trunc(price_per_kg_idr) then raise exception 'INVALID_SALE';end if;
  v_total:=weight_kg*price_per_kg_idr;
