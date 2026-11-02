@@ -34,3 +34,14 @@ test('migration never changes staff role grants',()=>{
 });
 
 test('both posting functions fail closed when period lock finds no OPEN row',()=>assert.equal((sql.match(/if not found then raise exception 'PERIOD_MISMATCH';end if;/g)||[]).length,2));
+
+test('anonymous and PUBLIC cannot execute finance RPCs',()=>{
+ for(const fn of ['demo_deposit_action\\(text,uuid,numeric,text,uuid,uuid,jsonb\\)','demo_post_harvest\\(uuid,uuid,uuid,text,date,numeric,numeric\\)']){
+  assert.match(sql,new RegExp('REVOKE EXECUTE ON FUNCTION public\\.'+fn+' FROM PUBLIC, anon;'));
+ }
+});
+test('only authenticated receives explicit finance RPC EXECUTE grants',()=>{
+ for(const fn of ['demo_deposit_action\\(text,uuid,numeric,text,uuid,uuid,jsonb\\)','demo_post_harvest\\(uuid,uuid,uuid,text,date,numeric,numeric\\)']){
+  assert.match(sql,new RegExp('GRANT EXECUTE ON FUNCTION public\\.'+fn+' TO authenticated;'));
+ }
+});
