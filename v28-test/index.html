@@ -48,16 +48,16 @@ $('harvest-form').onsubmit=async e=>{e.preventDefault();if(role!=='admin')return
 function initFinancePreview(){
  const date=$('cash-date');date.value=new Date().toLocaleDateString('en-CA');
  const b=$('cash-barn');b.replaceChildren();for(const x of barns){const o=document.createElement('option');o.value=x.id;o.textContent=x.name;b.append(o)}
- const formatInput=id=>{const el=$(id);el.addEventListener('input',()=>{el.value=el.value.replace(/\\D/g,'').replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.')})};
+ const formatInput=id=>{const el=$(id);el.addEventListener('input',()=>{el.value=el.value.replace(/\D/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')})};
  formatInput('cash-amount');formatInput('advance-amount');
  show('cash-entry-preview',role==='admin');
 }
 $('cash-preview').onclick=()=>{
- const amount=Number($('cash-amount').value.replace(/\\D/g,''));
+ const amount=Number($('cash-amount').value.replace(/\D/g,''));
  $('cash-preview-result').textContent= !$('cash-date').value||!$('cash-barn').value||!Number.isSafeInteger(amount)||amount<=0?'Lengkapi tanggal, kandang, dan nominal positif.':'PRATINJAU: '+$('cash-category').value+' • '+money(amount)+' • BELUM DISIMPAN';
 };
 $('advance-preview').onclick=()=>{
- const amount=Number($('advance-amount').value.replace(/\\D/g,''));
+ const amount=Number($('advance-amount').value.replace(/\D/g,''));
  $('advance-preview-result').textContent=!$('advance-name').value.trim()||!Number.isSafeInteger(amount)||amount<=0?'Nama karyawan dan nominal positif wajib diisi.':'PRATINJAU: '+$('advance-name').value.trim()+' • '+money(amount)+' • BELUM DISIMPAN';
 };
 async function refreshRealFinance(){
