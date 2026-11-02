@@ -40,7 +40,7 @@ async function refreshDemo(){
 const DEMO_TOPUP_PENDING_KEY='chegalluss.demo.topup.pending.v1';
 $('demo-topup-button').onclick=async()=>{
  if(role!=='admin')return notify('Hanya admin',true);
- const val=Number(($('demo-topup').value||'').replace(/\\D/g,''));
+ const val=Number(($('demo-topup').value||'').replace(/\D/g,''));
  if(!Number.isSafeInteger(val)||val<=0)return notify('Jumlah setoran tidak valid',true);
  if(!demoAccount)return notify('Akun deposit belum tersedia',true);
  let pending;
