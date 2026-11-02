@@ -103,7 +103,10 @@ async function refreshRealFinance(){
  const valid=!summary.error&&aggregate&&
   ['cash_movements_count','cash_net_idr','advance_movements_count','advance_outstanding_idr']
   .every(k=>aggregate[k]!==null&&aggregate[k]!==undefined&&
-   Number.isFinite(Number(aggregate[k]))&&Number.isSafeInteger(Number(aggregate[k])));
+   Number.isFinite(Number(aggregate[k]))&&Number.isSafeInteger(Number(aggregate[k])))&&
+  Number(aggregate.cash_movements_count)>=0&&
+  Number(aggregate.advance_movements_count)>=0&&
+  Number(aggregate.advance_outstanding_idr)>=0;
  if(!valid){
   $('real-cash').textContent='Belum tersedia';
   $('real-advances').textContent='Belum tersedia';
