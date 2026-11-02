@@ -18,3 +18,17 @@ test('topup amount is validated before replay lookup',()=>{
  assert.ok(topup.indexOf('INVALID_AMOUNT')>=0);
  assert.ok(topup.indexOf('INVALID_AMOUNT')<topup.indexOf('select m.account_id'));
 });
+
+test('SQL has exactly two complete function definitions',()=>{
+ assert.equal((sql.match(/CREATE OR REPLACE FUNCTION/g)||[]).length,2);
+ assert.equal((sql.match(/end \$function\$;/g)||[]).length,2);
+});
+test('topup retry is scoped to same account AND amount',()=>{
+ assert.match(sql,/previous_account<>account or previous_amount<>amount/);
+});
+test('unique UUID index is global, so same request cannot post to another account',()=>{
+ assert.match(sql,/demo_unique_topup_request ON public\.demo_deposit_movements\(topup_request_id\)/);
+});
+test('migration never changes staff role grants',()=>{
+ assert.doesNotMatch(sql,/GRANT\s+(?:ALL|INSERT|UPDATE|DELETE)/i);
+});
