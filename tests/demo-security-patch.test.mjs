@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const sql=readFileSync(new URL('../proposed-migrations/20261102_demo_security_hardening_review.sql',import.meta.url),'utf8');
-test('harvest requires OPEN period in SQL',()=>assert.match(sql,/barn_id=barn and status='open'/));
+test('bon and harvest lock an OPEN period',()=>assert.equal((sql.match(/barn_id=barn and status='open' for share/g)||[]).length,2));
 test('topup requires stable request ID',()=>assert.match(sql,/REQUEST_ID_REQUIRED/));
 test('topup dedupe has DB unique index',()=>assert.match(sql,/CREATE UNIQUE INDEX IF NOT EXISTS demo_unique_topup_request/));
 test('topup inserts ID into journal',()=>assert.match(sql,/topup_request_id\) values\(account,'topup',amount,uid,request_uuid\)/));
@@ -32,3 +32,5 @@ test('unique UUID index is global, so same request cannot post to another accoun
 test('migration never changes staff role grants',()=>{
  assert.doesNotMatch(sql,/GRANT\s+(?:ALL|INSERT|UPDATE|DELETE)/i);
 });
+
+test('both posting functions fail closed when period lock finds no OPEN row',()=>assert.equal((sql.match(/if not found then raise exception 'PERIOD_MISMATCH';end if;/g)||[]).length,2));
