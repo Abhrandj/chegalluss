@@ -54,11 +54,13 @@ $('demo-topup-button').onclick=async()=>{
  try{
   const {error}=await db.rpc('demo_deposit_action',{action:'topup',account:pending.account,amount:pending.amount,number:pending.requestId});
   if(error)return notify('Setoran belum dikonfirmasi: '+error.message+'. Coba ulang dengan jumlah yang sama; jangan buat setoran baru.',true);
+  // RPC has confirmed success. Never treat a subsequent dashboard refresh error as
+  // an uncertain payment or submit a new UUID to "fix" a display failure.
   localStorage.removeItem(DEMO_TOPUP_PENDING_KEY);
   $('demo-topup').value='';
-  await refreshDemo();
   notify('Setoran DEMO dikonfirmasi');
- }catch(e){notify('Koneksi terputus. Status setoran belum pasti; ulangi dengan nominal yang sama.',true)}
+  try{await refreshDemo()}catch(refreshError){notify('Setoran berhasil, tetapi tampilan belum diperbarui. Muat ulang laporan; jangan setor kembali.',true)}
+ }catch(e){notify('Koneksi terputus sebelum ada konfirmasi. Coba ulang dengan nominal yang sama dan ID tersimpan.',true)}
  finally{btn.disabled=false}
 };
 $('demo-save').onclick=async()=>{if(role!=='admin')return notify('Hanya admin',true);const number=$('bon-number').value.trim();const lines=[];for(const el of document.querySelectorAll('.bon-line')){const id=el.querySelector('.bon-product').value;const quantity=Number(el.querySelector('.bon-qty').value);const price=Number((el.querySelector('.bon-price').value||'').replace(/\D/g,''));if(!id||!Number.isFinite(quantity)||quantity<=0||!Number.isSafeInteger(price))return notify('Periksa barang, jumlah, dan harga',true);lines.push({product_id:id,quantity,unit_price_idr:price})}if(!number||!lines.length)return notify('Nomor bon atau item kosong',true);const btn=$('demo-save');btn.disabled=true;try{const {data,error}=await db.rpc('demo_deposit_action',{action:'bon',account:demoAccount,number,barn:$('bon-barn').value,period:$('bon-period').value,items:lines});if(error)return notify(error.message,true);$('bon-number').value='';$('bon-lines').replaceChildren();bonAdd();await refreshDemo();await refreshReports();$('demo-bon-breakdown').textContent='Dibayar dari deposit: '+money(data.deposit_used)+' • Utang baru: '+money(data.payable_created);notify('Bon DEMO tersimpan; sisa tagihan dicatat sebagai utang')}finally{btn.disabled=false}};
