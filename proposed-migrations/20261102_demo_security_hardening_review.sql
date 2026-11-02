@@ -86,4 +86,10 @@ begin
  select coalesce(sum(amount_idr),0) into v_balance from public.demo_deposit_movements where account_id=account;
  return jsonb_build_object('status','OK','sale_id',v_sale,'total',v_total,'paid_payables',applied,'credited_deposit',left_to_apply,'balance',v_balance);
 end $function$;
+-- Explicit RPC privileges: PostgreSQL defaults grant EXECUTE to PUBLIC.
+-- Only authenticated clients may invoke these functions; internal admin checks still apply.
+REVOKE EXECUTE ON FUNCTION public.demo_deposit_action(text,uuid,numeric,text,uuid,uuid,jsonb) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.demo_post_harvest(uuid,uuid,uuid,text,date,numeric,numeric) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.demo_deposit_action(text,uuid,numeric,text,uuid,uuid,jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.demo_post_harvest(uuid,uuid,uuid,text,date,numeric,numeric) TO authenticated;
 COMMIT;
