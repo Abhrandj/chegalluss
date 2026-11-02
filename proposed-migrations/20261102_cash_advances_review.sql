@@ -59,6 +59,7 @@ begin
      p_kind not in ('advance','repayment','payroll_deduction') or
      p_amount is null or p_amount<=0 or p_amount>10000000000
      then raise exception 'INVALID_ADVANCE_INPUT'; end if;
+  -- Employee name is provisional identity. Production must use an employee ID.
   -- Serialize movements for the same named employee to guard against over-repayment.
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(lower(trim(p_employee)),0));
   if exists (select 1 from public.employee_advances where request_id=p_request)
@@ -73,8 +74,8 @@ begin
     (request_id,actor_id,employee_name,occurred_on,kind,amount_idr,notes)
   values (p_request,v_actor,trim(p_employee),p_day,p_kind,p_amount,'Input via Admin')
   returning id into v_id;
-  -- Cash impact: advance disbursement negative, cash repayment positive.
-  -- Payroll deduction must NOT produce a cash movement.
+  -- Kasbon is a receivable, not an operating expense. Record cash movement
+  -- separately from P&L categories; payroll deduction has no cash effect.
   if p_kind <> 'payroll_deduction' then
     insert into public.operational_cash_movements
       (request_id,actor_id,occurred_on,barn_id,period_id,description,category,amount_idr)
