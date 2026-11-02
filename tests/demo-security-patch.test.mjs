@@ -12,3 +12,9 @@ test('mismatched retry must be rejected',()=>assert.match(sql,/REQUEST_ID_CONFLI
 test('admin authorization retained in both functions',()=>assert.equal((sql.match(/raise exception 'ADMIN_REQUIRED'/g)||[]).length,2));
 test('account row locking retained in both functions',()=>assert.equal((sql.match(/for update;/g)||[]).length>=2,true));
 test('migration explicitly wrapped in transaction',()=>{assert.match(sql,/\bBEGIN;/);assert.match(sql,/\bCOMMIT;/)});
+
+test('topup amount is validated before replay lookup',()=>{
+ const topup=sql.slice(sql.indexOf("if action='topup' then"),sql.indexOf("if number is null or length(trim(number))"));
+ assert.ok(topup.indexOf('INVALID_AMOUNT')>=0);
+ assert.ok(topup.indexOf('INVALID_AMOUNT')<topup.indexOf('select m.account_id'));
+});
