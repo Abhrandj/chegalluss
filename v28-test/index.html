@@ -37,8 +37,11 @@ async function refreshDemo(){
  bonRecalc();
 }
 // Keep an unresolved request stable across retries and page reloads.
+// Keep DEMO topups blocked until coordinated SQL migration and real DB replay tests pass.
+const CHEGALLUSS_DEMO_TOPUP_V2_ENABLED=false;
 const DEMO_TOPUP_PENDING_KEY='chegalluss.demo.topup.pending.v1';
 $('demo-topup-button').onclick=async()=>{
+ if(!CHEGALLUSS_DEMO_TOPUP_V2_ENABLED)return notify('Setoran DEMO sementara dinonaktifkan sampai pengujian database selesai.',true);
  if(role!=='admin')return notify('Hanya admin',true);
  const val=Number(($('demo-topup').value||'').replace(/\D/g,''));
  if(!Number.isSafeInteger(val)||val<=0)return notify('Jumlah setoran tidak valid',true);
