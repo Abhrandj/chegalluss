@@ -14,10 +14,10 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.chegalluss_validate_cash_period() FROM PUBLIC,anon,authenticated;
 CREATE TRIGGER chegalluss_cash_period_guard
-BEFORE INSERT OR UPDATE OF period_id,barn_id
+BEFORE INSERT OR UPDATE
 ON public.operational_cash_movements
 FOR EACH ROW EXECUTE FUNCTION public.chegalluss_validate_cash_period();
 
 -- Note: Staging has the equivalent trigger with staging_ names.
--- Guard validates only INSERT and UPDATE of period_id/barn_id; review all
--- UPDATE routes before relying on this to enforce immutable closed periods.
+-- Guard validates INSERT and all UPDATE routes for period-bound rows.
+-- Review period-closing workflows and multi-session lock contention before production.
