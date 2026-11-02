@@ -91,29 +91,38 @@ $('advance-preview').onclick=()=>{
 };
 async function refreshRealFinance(){
  const status=$('real-finance-status');
- const [cash,adv]=await Promise.all([
-   db.from('operational_cash_movements').select('occurred_on,description,amount_idr,category').order('occurred_on',{ascending:false}).limit(1000),
-   db.from('employee_advances').select('occurred_on,employee_name,kind,amount_idr').order('occurred_on',{ascending:false}).limit(1000)
+ // Source of truth MUST be the full PostgreSQL aggregate. Never infer a balance
+ // from a paginated browser response or from missing data.
+ const [summary,cash,adv]=await Promise.all([
+  db.rpc('chegalluss_finance_summary'),
+  db.from('operational_cash_movements').select('occurred_on,description,amount_idr,category').order('occurred_on',{ascending:false}).limit(10),
+  db.from('employee_advances').select('occurred_on,employee_name,kind,amount_idr').order('occurred_on',{ascending:false}).limit(10)
  ]);
- if(cash.error||adv.error){
-   $('real-cash').textContent='Tidak tersedia';$('real-advances').textContent='Tidak tersedia';
-   status.textContent='Gagal membaca: '+(cash.error?.message||adv.error?.message);
-   return;
+ const raw=summary.data;
+ const aggregate=Array.isArray(raw)?raw[0]:raw;
+ const valid=!summary.error&&aggregate&&
+  ['cash_movements_count','cash_net_idr','advance_movements_count','advance_outstanding_idr']
+  .every(k=>aggregate[k]!==null&&aggregate[k]!==undefined&&
+   Number.isFinite(Number(aggregate[k]))&&Number.isSafeInteger(Number(aggregate[k])));
+ if(!valid){
+  $('real-cash').textContent='Belum tersedia';
+  $('real-advances').textContent='Belum tersedia';
+  status.textContent='Total keuangan belum dapat diverifikasi. Fungsi agregasi server belum aktif atau akses ditolak. BEP: BELUM TERVERIFIKASI.';
+ }else{
+  $('real-cash').textContent=money(Number(aggregate.cash_net_idr));
+  $('real-advances').textContent=money(Number(aggregate.advance_outstanding_idr));
+  status.textContent='Mutasi kas: '+aggregate.cash_movements_count+' • Mutasi kasbon: '+aggregate.advance_movements_count+
+   '. Perhitungan server; masih perlu saldo pembukaan dan rekonsiliasi, bukan saldo bank atau laba final.';
  }
- const cs=cash.data||[],as=adv.data||[];
- const sum=arr=>arr.reduce((acc,x)=>acc+Number(x.amount_idr||0),0);
- const advanceDue=as.reduce((n,x)=>n+(x.kind==='advance'?Number(x.amount_idr): -Number(x.amount_idr)),0);
- const complete=cs.length<1000&&as.length<1000;
- $('real-cash').textContent=complete?money(sum(cs)):'Tidak lengkap';
- $('real-advances').textContent=complete?money(advanceDue):'Tidak lengkap';
- status.textContent=complete?'Kas: '+cs.length+' entri • Kasbon: '+as.length+' entri. Data dapat dibaca, belum direkonsiliasi dengan rekening bank.':'BATAS DATA: minimal satu tabel mencapai 1.000 entri. Total disembunyikan sampai agregasi server tersedia. Jangan gunakan untuk keputusan keuangan.';
- for(const [id,items,format] of [
-  ['real-cash-history',cs,(x)=>x.occurred_on+' • '+x.category+' • '+x.description+' • '+money(x.amount_idr)],
-  ['real-advance-history',as,(x)=>x.occurred_on+' • '+x.employee_name+' • '+x.kind+' • '+money(x.amount_idr)]
- ]) {
-   const ul=$(id);ul.replaceChildren();
-   for(const x of items.slice(0,10)){const li=document.createElement('li');li.textContent=format(x);ul.append(li)}
-   if(!items.length){const li=document.createElement('li');li.textContent='Belum ada transaksi';ul.append(li)}
+ for(const [id,result,format] of [
+  ['real-cash-history',cash,x=>x.occurred_on+' • '+x.category+' • '+x.description+' • '+money(x.amount_idr)],
+  ['real-advance-history',adv,x=>x.occurred_on+' • '+x.employee_name+' • '+x.kind+' • '+money(x.amount_idr)]
+ ]){
+  const ul=$(id);ul.replaceChildren();
+  if(result.error){const li=document.createElement('li');li.textContent='Riwayat tidak tersedia';ul.append(li);continue;}
+  const items=result.data||[];
+  for(const x of items){const li=document.createElement('li');li.textContent=format(x);ul.append(li);}
+  if(!items.length){const li=document.createElement('li');li.textContent='Belum ada transaksi';ul.append(li);}
  }
 }
 async function refreshReports(){
