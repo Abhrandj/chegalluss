@@ -23,7 +23,7 @@ db.auth.onAuthStateChange((event)=>{
 });
 $('forgot-password').onclick=async()=>{
  const email=$('email').value.trim();
- if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){ $('reset-request-status').textContent='Isi email akun staging di kolom Email terlebih dahulu.';return;}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $('reset-request-status').textContent='Isi email akun staging di kolom Email terlebih dahulu.';return;}
  const btn=$('forgot-password');btn.disabled=true;
  try{
   const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/'});
