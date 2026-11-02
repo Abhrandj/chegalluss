@@ -103,9 +103,10 @@ async function refreshRealFinance(){
  const cs=cash.data||[],as=adv.data||[];
  const sum=arr=>arr.reduce((acc,x)=>acc+Number(x.amount_idr||0),0);
  const advanceDue=as.reduce((n,x)=>n+(x.kind==='advance'?Number(x.amount_idr): -Number(x.amount_idr)),0);
- $('real-cash').textContent=money(sum(cs));
- $('real-advances').textContent=money(advanceDue);
- status.textContent='Kas: '+cs.length+' entri • Kasbon: '+as.length+' entri. '+(cs.length===1000||as.length===1000?'Data mencapai batas 1.000 baris; total belum lengkap.':'Data dapat dibaca. Belum direkonsiliasi dengan rekening bank.');
+ const complete=cs.length<1000&&as.length<1000;
+ $('real-cash').textContent=complete?money(sum(cs)):'Tidak lengkap';
+ $('real-advances').textContent=complete?money(advanceDue):'Tidak lengkap';
+ status.textContent=complete?'Kas: '+cs.length+' entri • Kasbon: '+as.length+' entri. Data dapat dibaca, belum direkonsiliasi dengan rekening bank.':'BATAS DATA: minimal satu tabel mencapai 1.000 entri. Total disembunyikan sampai agregasi server tersedia. Jangan gunakan untuk keputusan keuangan.';
  for(const [id,items,format] of [
   ['real-cash-history',cs,(x)=>x.occurred_on+' • '+x.category+' • '+x.description+' • '+money(x.amount_idr)],
   ['real-advance-history',as,(x)=>x.occurred_on+' • '+x.employee_name+' • '+x.kind+' • '+money(x.amount_idr)]
