@@ -45,6 +45,7 @@ $('demo-topup-button').onclick=async()=>{
  if(!demoAccount)return notify('Akun deposit belum tersedia',true);
  let pending;
  try{pending=JSON.parse(localStorage.getItem(DEMO_TOPUP_PENDING_KEY)||'null')}catch(e){return notify('Status setoran tertunda tidak dapat dibaca. Jangan mengirim ulang.',true)}
+ if(pending&&(!pending.requestId||!(/^[0-9a-f-]{36}$/i.test(pending.requestId))||!Number.isSafeInteger(pending.amount)||pending.amount<=0||!pending.account))return notify('Catatan setoran tertunda tidak valid. Jangan setor ulang sebelum diperiksa.',true);
  if(pending&&(pending.account!==demoAccount||pending.amount!==val))return notify('Ada setoran tertunda. Gunakan rekening dan nominal sebelumnya; periksa riwayat sebelum memulai setoran baru.',true);
  if(!pending){
   pending={requestId:crypto.randomUUID(),account:demoAccount,amount:val};
@@ -53,7 +54,7 @@ $('demo-topup-button').onclick=async()=>{
  const btn=$('demo-topup-button');btn.disabled=true;
  try{
   const {error}=await db.rpc('demo_deposit_action',{action:'topup',account:pending.account,amount:pending.amount,number:pending.requestId});
-  if(error)return notify('Setoran belum dikonfirmasi: '+error.message+'. Coba ulang dengan jumlah yang sama; jangan buat setoran baru.',true);
+  if(error)return notify('Status setoran belum pasti: '+error.message+'. Jangan membuat ID baru; pastikan patch server sudah aktif sebelum mencoba ulang.',true);
   // RPC has confirmed success. Never treat a subsequent dashboard refresh error as
   // an uncertain payment or submit a new UUID to "fix" a display failure.
   localStorage.removeItem(DEMO_TOPUP_PENDING_KEY);
